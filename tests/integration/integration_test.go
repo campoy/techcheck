@@ -1,0 +1,134 @@
+//go:build integration
+
+// Package integration holds smoke tests that require the Docker Compose
+// stack to be running (make up). They validate M1: the stack comes up, the
+// API reaches Temporal, and a workflow round-trips with inspectable history.
+package integration
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"testing"
+	"time"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/stretchr/testify/require"
+	enums "go.temporal.io/api/enums/v1"
+	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/worker"
+
+	"github.com/campoy/techcheck/internal/server"
+	"github.com/campoy/techcheck/internal/workflows"
+)
+
+func envOr(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
+func pgDSN() string {
+	return envOr("TECHCHECK_TEST_PG_DSN",
+		"postgres://postgres:postgres@localhost:5432/research?sslmode=disable")
+}
+
+func temporalHostPort() string {
+	return envOr("TECHCHECK_TEST_TEMPORAL", "localhost:7233")
+}
+
+func uiURL() string {
+	return envOr("TECHCHECK_TEST_UI", "http://localhost:8080")
+}
+
+// TestPostgres: the research database accepts connections and the pgvector
+// extension is installable.
+func TestPostgres(t *testing.T) {
+	db, err := sql.Open("pgx", pgDSN())
+	require.NoError(t, err)
+	defer db.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	require.NoError(t, db.PingContext(ctx))
+	_, err = db.ExecContext(ctx, "CREATE EXTENSION IF NOT EXISTS vector")
+	require.NoError(t, err, "pgvector must be available in the research database")
+}
+
+// TestTemporalHealth: the Temporal frontend answers a health check.
+func TestTemporalHealth(t *testing.T) {
+	c, err := client.Dial(client.Options{HostPort: temporalHostPort()})
+	require.NoError(t, err)
+	defer c.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	_, err = c.CheckHealth(ctx, &client.CheckHealthRequest{})
+	require.NoError(t, err)
+}
+
+// TestWebUI: the Temporal Web UI serves HTTP.
+func TestWebUI(t *testing.T) {
+	httpc := &http.Client{Timeout: 10 * time.Second}
+	resp, err := httpc.Get(uiURL())
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+}
+
+// TestEndToEnd: a run started through the API completes on a worker and its
+// event history is retrievable through the Temporal client (FR-1.4; FR-9.1
+// partial).
+func TestEndToEnd(t *testing.T) {
+	c, err := client.Dial(client.Options{HostPort: temporalHostPort()})
+	require.NoError(t, err)
+	defer c.Close()
+
+	// In-process worker against the real server, same registrations the
+	// worker binary will use.
+	w := worker.New(c, workflows.TaskQueue, worker.Options{})
+	w.RegisterWorkflow(workflows.Hello)
+	w.RegisterActivity(workflows.SayHello)
+	require.NoError(t, w.Start())
+	defer w.Stop()
+
+	api := httptest.NewServer(server.New(c))
+	defer api.Close()
+
+	resp, err := http.Post(api.URL+"/companies/acme/runs", "application/json", nil)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusAccepted, resp.StatusCode)
+
+	var body struct {
+		WorkflowID string `json:"workflow_id"`
+		RunID      string `json:"run_id"`
+	}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+	require.NotEmpty(t, body.WorkflowID)
+	require.NotEmpty(t, body.RunID)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var result string
+	require.NoError(t, c.GetWorkflow(ctx, body.WorkflowID, body.RunID).Get(ctx, &result))
+	require.Equal(t, "Hello, acme!", result)
+
+	// The run's event history must be inspectable after completion.
+	iter := c.GetWorkflowHistory(ctx, body.WorkflowID, body.RunID, false,
+		enums.HISTORY_EVENT_FILTER_TYPE_ALL_EVENT)
+	events := 0
+	for iter.HasNext() {
+		_, err := iter.Next()
+		require.NoError(t, err)
+		events++
+	}
+	require.Greater(t, events, 0, "completed run must have retrievable history")
+}
