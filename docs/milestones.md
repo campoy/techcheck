@@ -39,7 +39,7 @@ assigned to no milestone.
 |---|---|---|---|
 | [M0](#m0-design) | Requirements and design docs | — | ✅ Done ([`c3128a6`](https://github.com/campoy/techcheck/commit/c3128a6)) |
 | [M1](#m1-skeleton) | Compose stack, worker and api binaries, trivial workflow | FR-1.4 | ✅ Done ([#3](https://github.com/campoy/techcheck/pull/3)) |
-| [M2](#m2-linear-research) | Linear research pipeline, brief to disk | FR-2, FR-3, FR-6 core | 🚧 In progress |
+| [M2](#m2-linear-research) | Linear research pipeline, brief to disk | FR-2, FR-3, FR-6 core | ✅ Done ([#6](https://github.com/campoy/techcheck/pull/6)) |
 | [M3](#m3-corpus) | Corpus ingestion and retrieval | FR-4, FR-8.3 | ⬜ Not started |
 | [M4](#m4-loop--review) | Analysis loop, human review, accumulation | FR-5, FR-7, FR-1.3, FR-8.1 | ⬜ Not started |
 | [M5](#m5-cost--polish) | Token budgets, cost reporting, hardening | FR-9.2, FR-9.3 | ⬜ Not started |
@@ -88,7 +88,10 @@ Components:
 
 ## M2: Linear research
 
-**Status: 🚧 In progress** — tests under review.
+**Status: ✅ Done** — tests and implementation in
+[#6](https://github.com/campoy/techcheck/pull/6). The FR-6.4 manual quality
+check (re-running a previously evaluated company with real providers and
+comparing against the hand-written brief) is pending API keys.
 
 **Delivers:** FR-1.1, FR-1.2, FR-2.1, FR-2.2, FR-3.1, FR-3.2, FR-3.4,
 FR-6.1–FR-6.3, FR-8.2, FR-9.4. Partial: FR-5.4 (fixed search budget; the

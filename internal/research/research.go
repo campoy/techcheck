@@ -2,9 +2,12 @@
 // company evaluation runs.
 package research
 
-import "errors"
-
-var errNotImplemented = errors.New("not implemented")
+import (
+	"errors"
+	"fmt"
+	"strings"
+	"unicode"
+)
 
 // Categories a Finding can have.
 const (
@@ -26,7 +29,18 @@ type Finding struct {
 // Validate enforces FR-3.4: every finding needs a source URL, a claim, and a
 // known category.
 func (f Finding) Validate() error {
-	return errNotImplemented
+	if f.SourceURL == "" {
+		return errors.New("finding missing source_url")
+	}
+	if f.Claim == "" {
+		return errors.New("finding missing claim")
+	}
+	switch f.Category {
+	case CategoryFunding, CategoryTeam, CategoryProduct, CategoryMarket, CategoryRisk:
+		return nil
+	default:
+		return fmt.Errorf("finding has unknown category %q", f.Category)
+	}
 }
 
 // FundingSummary summarizes funding history.
@@ -68,11 +82,31 @@ type CompanyBrief struct {
 // Validate enforces FR-6.1–FR-6.3: fit score in 1–10 and at least one
 // source cited.
 func (b CompanyBrief) Validate() error {
-	return errNotImplemented
+	if b.FitScore < 1 || b.FitScore > 10 {
+		return fmt.Errorf("fit score %d outside 1-10", b.FitScore)
+	}
+	if len(b.Sources) == 0 {
+		return errors.New("brief cites no sources")
+	}
+	return nil
 }
 
 // Normalize maps a company name to its stable identifier (FR-1.2):
 // lowercase, words joined by hyphens, everything else stripped.
 func Normalize(company string) string {
-	return ""
+	var b strings.Builder
+	pendingHyphen := false
+	for _, r := range strings.ToLower(strings.TrimSpace(company)) {
+		switch {
+		case unicode.IsLetter(r) || unicode.IsDigit(r):
+			if pendingHyphen && b.Len() > 0 {
+				b.WriteByte('-')
+			}
+			pendingHyphen = false
+			b.WriteRune(r)
+		case unicode.IsSpace(r) || r == '-' || r == '_' || r == '.':
+			pendingHyphen = true
+		}
+	}
+	return b.String()
 }

@@ -5,7 +5,12 @@ package llm
 
 import (
 	"context"
-	"errors"
+	"encoding/json"
+	"fmt"
+	"strings"
+
+	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/anthropics/anthropic-sdk-go/option"
 )
 
 // Tier selects which model handles a request.
@@ -24,13 +29,61 @@ type Client interface {
 	Generate(ctx context.Context, tier Tier, prompt string, out any) error
 }
 
+const (
+	extractModel = "claude-haiku-4-5-20251001"
+	reasonModel  = "claude-sonnet-4-6"
+)
+
 // NewAnthropic returns a Client backed by the Anthropic API.
 func NewAnthropic(apiKey string) Client {
-	return notImplemented{}
+	return &anthropicClient{
+		client: anthropic.NewClient(option.WithAPIKey(apiKey)),
+		models: map[Tier]anthropic.Model{
+			TierExtract: extractModel,
+			TierReason:  reasonModel,
+		},
+	}
 }
 
-type notImplemented struct{}
+type anthropicClient struct {
+	client anthropic.Client
+	models map[Tier]anthropic.Model
+}
 
-func (notImplemented) Generate(context.Context, Tier, string, any) error {
-	return errors.New("not implemented")
+func (c *anthropicClient) Generate(ctx context.Context, tier Tier, prompt string, out any) error {
+	model, ok := c.models[tier]
+	if !ok {
+		return fmt.Errorf("unknown tier %q", tier)
+	}
+
+	msg, err := c.client.Messages.New(ctx, anthropic.MessageNewParams{
+		Model:     model,
+		MaxTokens: 4096,
+		System: []anthropic.TextBlockParam{{
+			Text: "Respond with only valid JSON matching the requested structure. No prose, no markdown code fences.",
+		}},
+		Messages: []anthropic.MessageParam{
+			anthropic.NewUserMessage(anthropic.NewTextBlock(prompt)),
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("anthropic %s: %w", model, err)
+	}
+
+	var sb strings.Builder
+	for _, block := range msg.Content {
+		if block.Type == "text" {
+			sb.WriteString(block.Text)
+		}
+	}
+	text := strings.TrimSpace(sb.String())
+	// Models occasionally fence the JSON despite instructions.
+	text = strings.TrimPrefix(text, "```json")
+	text = strings.TrimPrefix(text, "```")
+	text = strings.TrimSuffix(text, "```")
+
+	if err := json.Unmarshal([]byte(strings.TrimSpace(text)), out); err != nil {
+		return fmt.Errorf("anthropic %s: parsing structured output: %w", model, err)
+	}
+	return nil
 }
