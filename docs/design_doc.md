@@ -214,9 +214,13 @@ cron schedule. PDF extraction uses an open-source Go library
 first-party code rather than a framework dependency — at this scale they are
 ~100 lines each, and writing them is part of the point of the Go rewrite.
 
-Embeddings come from a hosted embedding API through its open-source client,
-mirroring the LLM decision; one model for the whole corpus, since consistency
-matters more than the specific choice.
+Embeddings come from a hosted embedding API, mirroring the LLM decision:
+**Voyage AI** (`voyage-3.5`, 1024 dimensions — Anthropic's recommended
+embedding partner), called through a small in-repo client behind an
+`Embedder` interface, like the search provider. One model embeds the whole
+corpus, since consistency matters more than the specific choice. Hermetic
+tests and fake-provider runs use a deterministic lexical embedder instead,
+so retrieval semantics stay testable offline.
 
 ## API
 
