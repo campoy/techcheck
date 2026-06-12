@@ -18,6 +18,8 @@ precedents when evaluating the next company.
   system must do, technology-agnostic.
 - [Design doc](docs/design_doc.md) — the proposed implementation on Temporal
   with the Go SDK.
+- [Milestones](docs/milestones.md) — delivery plan, per-milestone components,
+  and status.
 
 ## Design at a glance
 
