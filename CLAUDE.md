@@ -44,6 +44,13 @@ what order.
 
 ## Working style
 
+- **All changes to `main` go through pull requests** — never commit to main
+  directly. Work on a branch, push, open a PR with `gh`, and let the user
+  review and merge. A repository ruleset enforces this server-side. The
+  test-first milestone commits get their required approval as PR review.
+- **The repo is public.** Personal data — evaluation briefs, the corpus,
+  criteria documents — must never be committed; `briefs/` and `corpus/` are
+  gitignored for that reason.
 - Ask for clarification on design and preference decisions instead of
   assuming; for multi-step git operations, propose a plan and wait for
   approval before executing.
