@@ -50,7 +50,7 @@ func uiURL() string {
 func TestPostgres(t *testing.T) {
 	db, err := sql.Open("pgx", pgDSN())
 	require.NoError(t, err)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -76,9 +76,11 @@ func TestTemporalHealth(t *testing.T) {
 // TestWebUI: the Temporal Web UI serves HTTP.
 func TestWebUI(t *testing.T) {
 	httpc := &http.Client{Timeout: 10 * time.Second}
-	resp, err := httpc.Get(uiURL())
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, uiURL(), nil)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	resp, err := httpc.Do(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -101,9 +103,13 @@ func TestEndToEnd(t *testing.T) {
 	api := httptest.NewServer(server.New(c))
 	defer api.Close()
 
-	resp, err := http.Post(api.URL+"/companies/acme/runs", "application/json", nil)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodPost,
+		api.URL+"/companies/acme/runs", nil)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 	require.Equal(t, http.StatusAccepted, resp.StatusCode)
 
 	var body struct {
@@ -130,5 +136,5 @@ func TestEndToEnd(t *testing.T) {
 		require.NoError(t, err)
 		events++
 	}
-	require.Greater(t, events, 0, "completed run must have retrievable history")
+	require.Positive(t, events, "completed run must have retrievable history")
 }
