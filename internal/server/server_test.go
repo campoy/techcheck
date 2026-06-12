@@ -34,7 +34,7 @@ func (fakeRun) GetRunID() string { return "run-1" }
 func TestHealthz(t *testing.T) {
 	h := server.New(&fakeStarter{})
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+	h.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/healthz", nil))
 	require.Equal(t, http.StatusOK, rec.Code)
 }
 
@@ -43,7 +43,7 @@ func TestStartRun(t *testing.T) {
 	h := server.New(starter)
 
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/companies/acme/runs", nil))
+	h.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/companies/acme/runs", nil))
 
 	require.Equal(t, http.StatusAccepted, rec.Code)
 	require.True(t, starter.called, "handler must start a workflow")
@@ -64,7 +64,7 @@ func TestStartRunRequiresCompany(t *testing.T) {
 
 	for _, path := range []string{"/companies//runs", "/companies/%20/runs"} {
 		rec := httptest.NewRecorder()
-		h.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, path, nil))
+		h.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodPost, path, nil))
 		require.True(t, rec.Code >= 400 && rec.Code < 500,
 			"POST %s should be a client error, got %d", path, rec.Code)
 		require.False(t, starter.called, "no workflow should start for %s", path)
@@ -74,6 +74,6 @@ func TestStartRunRequiresCompany(t *testing.T) {
 func TestStartRunMethodNotAllowed(t *testing.T) {
 	h := server.New(&fakeStarter{})
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/companies/acme/runs", nil))
+	h.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/companies/acme/runs", nil))
 	require.Equal(t, http.StatusMethodNotAllowed, rec.Code)
 }
