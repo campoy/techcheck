@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/campoy/techcheck/internal/corpus"
 	"github.com/campoy/techcheck/internal/llm"
 	"github.com/campoy/techcheck/internal/research"
 	"github.com/campoy/techcheck/internal/search"
@@ -54,4 +55,18 @@ func (fakeSearcher) Search(ctx context.Context, query string, max int) ([]search
 		Title:   "Fake result",
 		Content: "canned content for hermetic integration runs",
 	}}, nil
+}
+
+type fakeCorpus struct{}
+
+func (fakeCorpus) Retrieve(ctx context.Context, queries []string, k int) ([]corpus.Excerpt, error) {
+	return []corpus.Excerpt{{
+		DocPath: "briefs/fake.md",
+		Section: "Decision",
+		Content: "canned precedent for hermetic integration runs",
+	}}, nil
+}
+
+func (fakeCorpus) IndexDocument(ctx context.Context, docPath, content string) (int, error) {
+	return 1, nil
 }

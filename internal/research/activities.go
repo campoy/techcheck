@@ -8,17 +8,41 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/campoy/techcheck/internal/corpus"
 	"github.com/campoy/techcheck/internal/llm"
 	"github.com/campoy/techcheck/internal/search"
 )
 
 // Activities holds the dependencies the research activities need. All
-// non-determinism (LLM, search, fetch, disk) lives here, behind interfaces
-// so tests run hermetically.
+// non-determinism (LLM, search, fetch, disk, corpus) lives here, behind
+// interfaces so tests run hermetically.
 type Activities struct {
 	LLM       llm.Client
 	Searcher  search.Searcher
+	Corpus    corpus.Client
 	BriefsDir string // where approved briefs land (FR-8.2)
+}
+
+// DefaultPrecedents is how many corpus excerpts a run retrieves.
+const DefaultPrecedents = 5
+
+// CorpusSearchRequest carries the retrieval cues for precedent lookup.
+type CorpusSearchRequest struct {
+	Company  string
+	Findings []Finding
+}
+
+// CorpusSearch retrieves corpus excerpts relevant to the company using the
+// company name plus the product, market, and risk findings as cues
+// (FR-4.2), surfacing precedents from past evaluations (FR-4.3).
+func (a *Activities) CorpusSearch(ctx context.Context, req CorpusSearchRequest) ([]corpus.Excerpt, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+// IndexBrief indexes the rendered brief into the personal corpus so future
+// evaluations retrieve it as a precedent (FR-8.3).
+func (a *Activities) IndexBrief(ctx context.Context, brief CompanyBrief) (int, error) {
+	return 0, fmt.Errorf("not implemented")
 }
 
 // PlanRequest asks for a research plan for a company.
@@ -124,6 +148,7 @@ Respond with a JSON array of findings.`, raw)
 type BriefRequest struct {
 	Company  string
 	Findings []Finding
+	Excerpts []corpus.Excerpt // corpus precedents to cite (FR-6.1)
 }
 
 // GenerateBrief produces the validated CompanyBrief using the reason tier
