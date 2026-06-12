@@ -3,8 +3,7 @@
 The single source of truth for delivery milestones of the
 [design doc](design_doc.md): the components each milestone delivers and
 their status. When a milestone is done, its entry
-links to the git commit that completed it (use the merge/final commit; once
-the repo has a remote, turn hashes into full commit URLs).
+links to the git commit that completed it (use the merge/final commit).
 
 ## Process
 
@@ -36,7 +35,7 @@ assigned to no milestone.
 
 | Milestone | Summary | Delivers | Status |
 |---|---|---|---|
-| [M0](#m0-design) | Requirements and design docs | — | ✅ Done (`c3128a6`) |
+| [M0](#m0-design) | Requirements and design docs | — | ✅ Done ([`c3128a6`](https://github.com/campoy/techcheck/commit/c3128a6)) |
 | [M1](#m1-skeleton) | Compose stack, worker and api binaries, trivial workflow | FR-1.4 | ⬜ Not started |
 | [M2](#m2-linear-research) | Linear research pipeline, brief to disk | FR-2, FR-3, FR-6 core | ⬜ Not started |
 | [M3](#m3-corpus) | Corpus ingestion and retrieval | FR-4, FR-8.3 | ⬜ Not started |
@@ -45,9 +44,16 @@ assigned to no milestone.
 
 ## M0: Design
 
-**Status: ✅ Done** — commits `c1276a6` (license), `fec66db` (functional
-requirements), `db57ae7` (design doc), `77da097` (README), `a55ae5c`
-(milestone tracker), `c3128a6` (FR mapping, completing commit).
+**Status: ✅ Done** — commits
+[`c1276a6`](https://github.com/campoy/techcheck/commit/c1276a6) (license),
+[`fec66db`](https://github.com/campoy/techcheck/commit/fec66db) (functional
+requirements),
+[`db57ae7`](https://github.com/campoy/techcheck/commit/db57ae7) (design doc),
+[`77da097`](https://github.com/campoy/techcheck/commit/77da097) (README),
+[`a55ae5c`](https://github.com/campoy/techcheck/commit/a55ae5c) (milestone
+tracker), and
+[`c3128a6`](https://github.com/campoy/techcheck/commit/c3128a6) (FR mapping,
+completing commit).
 
 Components:
 

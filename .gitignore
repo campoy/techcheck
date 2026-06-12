@@ -1,0 +1,15 @@
+# Binaries and build artifacts
+/bin/
+*.test
+*.out
+
+# Local environment
+.env
+.env.*
+
+# Personal data — the repo is public; briefs and corpus never get committed
+/briefs/
+/corpus/
+
+# OS noise
+.DS_Store
