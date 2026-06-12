@@ -1,0 +1,20 @@
+version: "2"
+
+linters:
+  # standard = errcheck, govet, ineffassign, staticcheck, unused
+  default: standard
+  enable:
+    - bodyclose
+    - copyloopvar
+    - errorlint
+    - misspell
+    - noctx
+    - rowserrcheck
+    - sqlclosecheck
+    - testifylint
+    - thelper
+    - usestdlibvars
+
+formatters:
+  enable:
+    - gofumpt

@@ -26,7 +26,7 @@ func New(temporal WorkflowStarter) http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, "ok\n")
+		_, _ = io.WriteString(w, "ok\n")
 	})
 
 	mux.HandleFunc("POST /companies/{name}/runs", func(w http.ResponseWriter, r *http.Request) {
@@ -45,12 +45,17 @@ func New(temporal WorkflowStarter) http.Handler {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusAccepted)
-		json.NewEncoder(w).Encode(map[string]string{
+		body, err := json.Marshal(map[string]string{
 			"workflow_id": run.GetID(),
 			"run_id":      run.GetRunID(),
 		})
+		if err != nil {
+			http.Error(w, "encoding response: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusAccepted)
+		_, _ = w.Write(body)
 	})
 
 	// ServeMux cleans paths like /companies//runs with a 307 redirect; an
