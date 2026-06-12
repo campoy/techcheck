@@ -25,7 +25,9 @@ func TestVoyageEmbed(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
 		gotAuth = r.Header.Get("Authorization")
-		require.NoError(t, json.NewDecoder(r.Body).Decode(&gotBody))
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Errorf("decoding request body: %v", err)
+		}
 
 		type item struct {
 			Embedding []float32 `json:"embedding"`
@@ -33,7 +35,9 @@ func TestVoyageEmbed(t *testing.T) {
 		resp := struct {
 			Data []item `json:"data"`
 		}{Data: []item{{canned[0]}, {canned[1]}}}
-		require.NoError(t, json.NewEncoder(w).Encode(resp))
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			t.Errorf("encoding response: %v", err)
+		}
 	}))
 	defer srv.Close()
 
