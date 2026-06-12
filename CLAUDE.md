@@ -27,16 +27,19 @@ what order.
 
 ## Process
 
-- **Test-first milestones, one PR per milestone.** Each milestone is a
-  single PR whose first commit contains the unit and integration tests that
-  encode its behaviors — the FR IDs on its "Delivers" line in
-  `docs/milestones.md` are the checklist. That commit requires explicit user
-  review and approval (as PR review, while checks are still red) before
-  implementation commits join the same PR; the PR merges once green.
-  Implementation then makes those tests pass; a milestone is done only when
-  all of its first-commit tests pass unmodified. If a test encoded a wrong
-  expectation, fix it in its own commit with a justification — never adjust
-  it silently.
+- **Test-first milestones, one PR per milestone, at least two commits.**
+  Each milestone (or phase of work) is a single PR with at minimum two
+  commits: first the unit and integration tests that encode its behaviors —
+  the FR IDs on its "Delivers" line in `docs/milestones.md` are the
+  checklist — then, separately, the implementation that makes them pass.
+  Never mix tests and implementation in one commit. A milestone is done only
+  when all of its test-commit tests pass unmodified. If a test encoded a
+  wrong expectation, fix it in its own commit with a justification — never
+  adjust it silently.
+- **Drive the PR to green autonomously.** Create the PR without asking,
+  watch the required checks, and fix any failures with follow-up commits.
+  Notify the user only when the PR is ready: all checks passing, awaiting
+  their review and merge. Never merge it yourself.
 - **Milestone bookkeeping.** When a milestone completes, update its status in
   `docs/milestones.md` and link the completing commit; for M1 onward, that
   doc update rides inside the completing commit itself.
@@ -48,17 +51,14 @@ what order.
 
 - **All changes to `main` go through pull requests** — never commit to main
   directly. Work on a branch, push, open a PR with `gh`, and let the user
-  review and merge. A repository ruleset enforces this server-side. The
-  test-first milestone commits get their required approval as PR review.
+  review and merge. A repository ruleset enforces this server-side.
 - **The repo is public.** Personal data — evaluation briefs, the corpus,
   criteria documents — must never be committed; `briefs/` and `corpus/` are
   gitignored for that reason.
 - Ask for clarification on design and preference decisions instead of
-  assuming; for multi-step git operations, propose a plan and wait for
-  approval before executing.
+  assuming; branching, committing, and opening PRs within the process above
+  need no permission.
 - Small, focused commits — one logical change each — with conventional-commit
   prefixes (`docs:`, `chore:`, `feat:`, `test:`, `fix:`).
-- After a substantial change, ask whether it should be committed; never
-  commit without confirmation.
 - Commit messages must not reference Claude or Anthropic in any form — no
   Co-Authored-By trailers, no "generated with" lines.
