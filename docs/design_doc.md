@@ -278,20 +278,9 @@ All locally-run components open source:
 
 ## Milestones
 
-1. **M1: Skeleton.** Compose file (Temporal, Postgres), worker and api
-   binaries, a trivial workflow, one end-to-end request inspectable in the
-   Temporal Web UI.
-2. **M2: Linear research.** `PlanResearch` → `WebResearch` →
-   `ExtractFindings` → `GenerateBrief` with a fixed search budget; brief to
-   disk. No loop, no corpus.
-3. **M3: Corpus.** `IngestCorpus` workflow, pgvector schema, `CorpusSearch`
-   activity; briefs cite precedents.
-4. **M4: Loop + review.** The bounded analysis loop, `review` signal,
-   correction-driven regeneration, finding archive and reload across runs.
-5. **M5: Cost + polish.** Token budgets, end-of-run cost reporting, retention
-   configuration, API hardening.
-
-Each milestone is independently usable and demoable.
+Tracked in [milestones.md](milestones.md): per-milestone components, current
+status, and the test-first delivery process. Each milestone is independently
+usable and demoable.
 
 ## Risks and Open Questions
 

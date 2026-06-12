@@ -1,7 +1,8 @@
 # Milestones
 
-Tracks the milestones from the [design doc](design_doc.md), the components
-each one delivers, and their status. When a milestone is done, its entry
+The single source of truth for delivery milestones of the
+[design doc](design_doc.md): the components each milestone delivers and
+their status. When a milestone is done, its entry
 links to the git commit that completed it (use the merge/final commit; once
 the repo has a remote, turn hashes into full commit URLs).
 
@@ -25,14 +26,22 @@ expectation, changing that test is its own commit with a justification —
 never silently adjusted to match the implementation. The completing commit
 is then linked from the table below.
 
-| Milestone | Summary | Status |
-|---|---|---|
-| [M0](#m0-design) | Requirements and design docs | ✅ Done (`003ae6a`) |
-| [M1](#m1-skeleton) | Compose stack, worker and api binaries, trivial workflow | ⬜ Not started |
-| [M2](#m2-linear-research) | Linear research pipeline, brief to disk | ⬜ Not started |
-| [M3](#m3-corpus) | Corpus ingestion and retrieval | ⬜ Not started |
-| [M4](#m4-loop--review) | Analysis loop, human review, accumulation | ⬜ Not started |
-| [M5](#m5-cost--polish) | Token budgets, cost reporting, hardening | ⬜ Not started |
+The behaviors each milestone's tests encode are its functional requirements:
+every milestone section lists the FR IDs (from
+[functional_requirements.md](functional_requirements.md)) it delivers, and
+those IDs are the checklist for that milestone's first test commit. A
+requirement marked *partial* is finished by a later milestone, which lists
+it again. FR-8.4 (manual retention) requires no implementation and is
+assigned to no milestone.
+
+| Milestone | Summary | Delivers | Status |
+|---|---|---|---|
+| [M0](#m0-design) | Requirements and design docs | — | ✅ Done (`003ae6a`) |
+| [M1](#m1-skeleton) | Compose stack, worker and api binaries, trivial workflow | FR-1.4 | ⬜ Not started |
+| [M2](#m2-linear-research) | Linear research pipeline, brief to disk | FR-2, FR-3, FR-6 core | ⬜ Not started |
+| [M3](#m3-corpus) | Corpus ingestion and retrieval | FR-4, FR-8.3 | ⬜ Not started |
+| [M4](#m4-loop--review) | Analysis loop, human review, accumulation | FR-5, FR-7, FR-1.3, FR-8.1 | ⬜ Not started |
+| [M5](#m5-cost--polish) | Token budgets, cost reporting, hardening | FR-9.2, FR-9.3 | ⬜ Not started |
 
 ## M0: Design
 
@@ -49,6 +58,12 @@ Components:
 
 **Status: ⬜ Not started**
 
+**Delivers:** FR-1.4 (the API exists and reaches Temporal); FR-9.1 partial
+(event history is captured and inspectable, though there is little to
+inspect yet). M1 is otherwise pure infrastructure, so its first-commit tests
+are smoke tests — the stack comes up, a workflow round-trips — rather than
+FR tests.
+
 Components:
 
 - Docker Compose file: Temporal server (Postgres persistence), Postgres 16
@@ -61,6 +76,15 @@ Components:
 ## M2: Linear research
 
 **Status: ⬜ Not started**
+
+**Delivers:** FR-1.1, FR-1.2, FR-2.1, FR-2.2, FR-3.1, FR-3.2, FR-3.4,
+FR-6.1–FR-6.3, FR-8.2, FR-9.4. Partial: FR-5.4 (fixed search budget; the
+real per-iteration cap arrives with the loop in M4) and FR-6.1's
+`comparable_precedents` field (empty until M3). FR-6.4 (brief quality
+comparable to manual evaluations) gets its first check here — re-run a
+previously evaluated company and compare against the hand-written brief —
+but is only finalized in M4; it is validated by manual review, not by an
+automated test.
 
 Components:
 
@@ -79,6 +103,9 @@ Components:
 
 **Status: ⬜ Not started**
 
+**Delivers:** FR-4.1–FR-4.5, FR-8.3; completes FR-6.1 (briefs now cite
+comparable precedents).
+
 Components:
 
 - `IngestCorpus` workflow: directory walk, header-aware Markdown splitting,
@@ -91,6 +118,11 @@ Components:
 ## M4: Loop + review
 
 **Status: ⬜ Not started**
+
+**Delivers:** FR-1.3, FR-2.3, FR-3.3, FR-5.1–FR-5.3, FR-5.5, FR-7.1–FR-7.3,
+FR-8.1; completes FR-5.4 (per-iteration search cap), FR-9.1 (loop decisions
+now visible in event history), and FR-6.4 (final manual quality validation,
+with corrections feeding the corpus).
 
 Components:
 
@@ -105,6 +137,8 @@ Components:
 ## M5: Cost + polish
 
 **Status: ⬜ Not started**
+
+**Delivers:** FR-9.2, FR-9.3; makes FR-5.3/FR-5.4 caps configurable per run.
 
 Components:
 
