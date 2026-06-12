@@ -104,6 +104,7 @@ func TestEndToEnd(t *testing.T) {
 	w.RegisterActivity(&research.Activities{
 		LLM:       fakeLLM{},
 		Searcher:  fakeSearcher{},
+		Corpus:    fakeCorpus{},
 		BriefsDir: t.TempDir(),
 	})
 	require.NoError(t, w.Start())
