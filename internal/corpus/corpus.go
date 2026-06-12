@@ -9,10 +9,9 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
+	"fmt"
+	"math"
 )
-
-var errNotImplemented = errors.New("not implemented")
 
 // Dims is the embedding dimensionality used across the whole corpus; one
 // model embeds everything, so consistency is structural.
@@ -49,7 +48,8 @@ type Excerpt struct {
 // and retrieving relevant, diverse excerpts from it.
 type Client interface {
 	// IndexDocument splits, embeds, and upserts one document's content,
-	// returning the number of chunks indexed.
+	// returning the number of newly indexed chunks; re-indexing unchanged
+	// content returns 0.
 	IndexDocument(ctx context.Context, docPath, content string) (int, error)
 	// Retrieve returns at most k excerpts relevant to the queries,
 	// de-duplicated for diversity (FR-4.2–FR-4.4).
@@ -69,11 +69,74 @@ type Corpus struct {
 
 // IndexDocument implements Client.
 func (c *Corpus) IndexDocument(ctx context.Context, docPath, content string) (int, error) {
-	return 0, errNotImplemented
+	chunks := SplitMarkdown(docPath, content)
+	if len(chunks) == 0 {
+		return 0, nil
+	}
+	texts := make([]string, len(chunks))
+	for i, ch := range chunks {
+		texts[i] = ch.Content
+	}
+	embeddings, err := c.Embedder.Embed(ctx, texts)
+	if err != nil {
+		return 0, fmt.Errorf("embedding %s: %w", docPath, err)
+	}
+	return c.Store.Upsert(ctx, chunks, embeddings)
 }
 
-// Retrieve implements Client: embeds the queries, over-fetches candidates,
-// and selects a diverse top-k via maximal marginal relevance.
+// mmrLambda weighs relevance against novelty during retrieval.
+const mmrLambda = 0.7
+
+// Retrieve implements Client: embeds the queries, over-fetches candidates
+// for each, and selects a diverse top-k via maximal marginal relevance
+// against the queries' centroid.
 func (c *Corpus) Retrieve(ctx context.Context, queries []string, k int) ([]Excerpt, error) {
-	return nil, errNotImplemented
+	if len(queries) == 0 || k <= 0 {
+		return nil, nil
+	}
+	embeddings, err := c.Embedder.Embed(ctx, queries)
+	if err != nil {
+		return nil, fmt.Errorf("embedding queries: %w", err)
+	}
+
+	seen := map[string]bool{}
+	var candidates []Excerpt
+	for _, emb := range embeddings {
+		found, err := c.Store.Search(ctx, emb, k*3)
+		if err != nil {
+			return nil, err
+		}
+		for _, e := range found {
+			key := e.DocPath + "\x00" + e.Section + "\x00" + e.Content
+			if !seen[key] {
+				seen[key] = true
+				candidates = append(candidates, e)
+			}
+		}
+	}
+	return MMR(centroid(embeddings), candidates, k, mmrLambda), nil
+}
+
+// centroid is the normalized mean of the vectors.
+func centroid(vectors [][]float32) []float32 {
+	if len(vectors) == 0 {
+		return nil
+	}
+	out := make([]float32, len(vectors[0]))
+	for _, v := range vectors {
+		for i := range min(len(v), len(out)) {
+			out[i] += v[i]
+		}
+	}
+	var norm float64
+	for _, x := range out {
+		norm += float64(x) * float64(x)
+	}
+	if norm > 0 {
+		scale := float32(1 / math.Sqrt(norm))
+		for i := range out {
+			out[i] *= scale
+		}
+	}
+	return out
 }
