@@ -56,13 +56,15 @@ func TestCorpusIndexIdempotent(t *testing.T) {
 	doc := uniqueDoc(prefix, "resume.md")
 	content := `# Resume
 
+Synthetic fixture document; not real personal data.
+
 ## Experience
 
-Staff engineer: Go services, Kubernetes platforms, developer tooling.
+Fictional engineer: assorted backend services and developer tooling.
 
 ## Interests
 
-Durable execution, developer productivity, open source.
+Workflow engines, search quality, fixture data.
 `
 	n, err := c.IndexDocument(ctx, doc, content)
 	require.NoError(t, err)
@@ -81,11 +83,14 @@ func TestCorpusRetrievesPrecedents(t *testing.T) {
 	ctx, cancel := contextWithTimeout(t, 60*time.Second)
 	defer cancel()
 
+	// Synthetic fixture corpus: the repo is public, so nothing here comes
+	// from the real personal corpus. The two precedents restate the public
+	// acceptance examples in docs/functional_requirements.md.
 	prefix := fmt.Sprintf("it-%d", time.Now().UnixNano())
 	docs := map[string]string{
-		"resume.md": "# Resume\n\nStaff engineer, Go and distributed systems.\n",
-		"criteria.md": "# Criteria\n\n## Values\n\nNo defense or surveillance work.\n\n" +
-			"## Stage\n\nSeries A or later, post product-market fit.\n",
+		"resume.md": "# Resume\n\nFictional engineer profile used as fixture content.\n",
+		"criteria.md": "# Criteria\n\nSynthetic test criteria.\n\n## Values\n\nNo defense or surveillance work.\n\n" +
+			"## Stage\n\nAvoid extremely early pre-product companies.\n",
 		"briefs/scale-ai.md": "# Scale AI\n\n## Decision\n\nRuled out on values grounds: " +
 			"military contracts, defense work, surveillance programs.\n",
 		"briefs/tribeoroi.md": "# TribeROI\n\n## Decision\n\nRuled out as stage mismatch: " +
@@ -117,11 +122,19 @@ func requireDocSurfaced(t *testing.T, excerpts []corpus.Excerpt, fragment, msg s
 }
 
 // FR-4.4: near-duplicate sections must not crowd out a relevant excerpt
-// from another document.
+// from another document. The table is cleared first: candidate selection
+// is global, so chunks accumulated by earlier local runs against the
+// persistent volume would otherwise drown the fixtures.
 func TestCorpusRetrievalDiversity(t *testing.T) {
 	c := newTestCorpus(t)
 	ctx, cancel := contextWithTimeout(t, 60*time.Second)
 	defer cancel()
+
+	db, err := sql.Open("pgx", pgDSN())
+	require.NoError(t, err)
+	defer func() { _ = db.Close() }()
+	_, err = db.ExecContext(ctx, "TRUNCATE corpus_chunks")
+	require.NoError(t, err)
 
 	prefix := fmt.Sprintf("it-%d", time.Now().UnixNano())
 	var dup strings.Builder
@@ -129,7 +142,7 @@ func TestCorpusRetrievalDiversity(t *testing.T) {
 	for i := range 5 {
 		fmt.Fprintf(&dup, "\n## Take %d\n\nThe rust compiler toolchain is interesting.\n", i)
 	}
-	_, err := c.IndexDocument(ctx, uniqueDoc(prefix, "dup.md"), dup.String())
+	_, err = c.IndexDocument(ctx, uniqueDoc(prefix, "dup.md"), dup.String())
 	require.NoError(t, err)
 	_, err = c.IndexDocument(ctx, uniqueDoc(prefix, "other.md"),
 		"# Other\n\nNotes on rust compiler toolchain performance and build speed.\n")
@@ -147,11 +160,12 @@ func TestCorpusRetrievalDiversity(t *testing.T) {
 func TestCorpusIngestEndToEnd(t *testing.T) {
 	cor := newTestCorpus(t)
 
+	// Synthetic fixtures again — see TestCorpusRetrievesPrecedents.
 	dir := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "briefs"), 0o755))
 	prefix := time.Now().UnixNano()
 	files := map[string]string{
-		"resume.md":           fmt.Sprintf("# Resume %d\n\nGo, Temporal, distributed systems.\n", prefix),
+		"resume.md":           fmt.Sprintf("# Resume %d\n\nFictional fixture profile.\n", prefix),
 		"criteria.md":         fmt.Sprintf("# Criteria %d\n\n## Values\n\nNo surveillance work.\n", prefix),
 		"briefs/scale-ai.md":  fmt.Sprintf("# Scale AI %d\n\nRuled out on values grounds.\n", prefix),
 		"briefs/tribeoroi.md": fmt.Sprintf("# TribeROI %d\n\nRuled out as stage mismatch.\n", prefix),
