@@ -36,7 +36,7 @@ assigned to no milestone.
 
 | Milestone | Summary | Delivers | Status |
 |---|---|---|---|
-| [M0](#m0-design) | Requirements and design docs | — | ✅ Done (`003ae6a`) |
+| [M0](#m0-design) | Requirements and design docs | — | ✅ Done (`069a824`) |
 | [M1](#m1-skeleton) | Compose stack, worker and api binaries, trivial workflow | FR-1.4 | ⬜ Not started |
 | [M2](#m2-linear-research) | Linear research pipeline, brief to disk | FR-2, FR-3, FR-6 core | ⬜ Not started |
 | [M3](#m3-corpus) | Corpus ingestion and retrieval | FR-4, FR-8.3 | ⬜ Not started |
@@ -46,13 +46,16 @@ assigned to no milestone.
 ## M0: Design
 
 **Status: ✅ Done** — commits `4de7ded` (license), `9238dc6` (functional
-requirements), `096a02d` (design doc), `003ae6a` (README).
+requirements), `096a02d` (design doc), `003ae6a` (README), `f347063`
+(milestone tracker), `069a824` (FR mapping, completing commit).
 
 Components:
 
 - Functional requirements (FR-1–FR-9), technology-agnostic.
 - Design doc for the Temporal/Go implementation.
 - README and MIT license.
+- This milestone tracker, with the test-first process and the
+  milestone-to-requirement mapping.
 
 ## M1: Skeleton
 
