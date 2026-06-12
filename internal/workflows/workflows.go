@@ -6,7 +6,8 @@ package workflows
 
 import (
 	"context"
-	"errors"
+	"fmt"
+	"time"
 
 	"go.temporal.io/sdk/workflow"
 )
@@ -14,15 +15,20 @@ import (
 // TaskQueue is the task queue both the worker and the API client use.
 const TaskQueue = "techcheck"
 
-var errNotImplemented = errors.New("not implemented")
-
 // Hello is the M1 placeholder workflow: it runs the SayHello activity and
 // returns its greeting.
 func Hello(ctx workflow.Context, name string) (string, error) {
-	return "", errNotImplemented
+	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+		StartToCloseTimeout: 10 * time.Second,
+	})
+	var greeting string
+	if err := workflow.ExecuteActivity(ctx, SayHello, name).Get(ctx, &greeting); err != nil {
+		return "", err
+	}
+	return greeting, nil
 }
 
 // SayHello is the M1 placeholder activity.
 func SayHello(ctx context.Context, name string) (string, error) {
-	return "", errNotImplemented
+	return fmt.Sprintf("Hello, %s!", name), nil
 }
