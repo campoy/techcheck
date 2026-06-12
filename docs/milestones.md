@@ -11,15 +11,16 @@ Each milestone is delivered test-first, in two phases:
 
 1. **Tests first.** Write the unit and integration tests that validate the
    behaviors we want to observe once the milestone is complete — before any
-   implementation. These land as the first commit of the milestone's PR and
-   require explicit review and approval (as PR review) before implementation
-   starts. At this point the tests fail; that is the expected state, and the
-   PR's checks are red.
-2. **Implementation.** Build the milestone's components on the same PR,
-   making the relevant tests pass as each component lands. A component is
-   not done until the tests covering it pass. The milestone merges as one
-   PR once all checks are green — required status checks mean a red
-   tests-only PR cannot merge on its own.
+   implementation. These land as the first commit of the milestone's PR; at
+   this point the tests fail, which is the expected state.
+2. **Implementation.** Build the milestone's components in separate commits
+   on the same PR — never mixed into the test commit — making the relevant
+   tests pass as each component lands. A component is not done until the
+   tests covering it pass.
+3. **Green, then review.** The PR is opened without ceremony and driven to
+   green autonomously: watch the required checks, fix failures with
+   follow-up commits. The user is notified once everything passes; their
+   review and merge close the milestone.
 
 A milestone is **done** when every test from its first commit passes
 unmodified. If implementation reveals that a test encoded the wrong
