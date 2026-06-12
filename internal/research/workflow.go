@@ -5,6 +5,7 @@ import (
 
 	"go.temporal.io/sdk/workflow"
 
+	"github.com/campoy/techcheck/internal/corpus"
 	"github.com/campoy/techcheck/internal/search"
 )
 
@@ -18,9 +19,10 @@ type ResearchInput struct {
 	MaxSearches int // 0 means DefaultMaxSearches
 }
 
-// CompanyResearch is the M2 linear research workflow:
-// PlanResearch -> WebResearch -> ExtractFindings -> GenerateBrief ->
-// WriteBrief. No loop and no corpus yet; those arrive in M3/M4.
+// CompanyResearch is the M3 linear research workflow:
+// PlanResearch -> WebResearch -> ExtractFindings -> CorpusSearch ->
+// GenerateBrief -> WriteBrief -> IndexBrief. No loop yet; that arrives
+// in M4.
 func CompanyResearch(ctx workflow.Context, in ResearchInput) (CompanyBrief, error) {
 	if in.MaxSearches <= 0 {
 		in.MaxSearches = DefaultMaxSearches
@@ -49,16 +51,30 @@ func CompanyResearch(ctx workflow.Context, in ResearchInput) (CompanyBrief, erro
 		return CompanyBrief{}, err
 	}
 
+	var excerpts []corpus.Excerpt
+	if err := workflow.ExecuteActivity(ctx, a.CorpusSearch, CorpusSearchRequest{
+		Company:  in.Company,
+		Findings: findings,
+	}).Get(ctx, &excerpts); err != nil {
+		return CompanyBrief{}, err
+	}
+
 	var brief CompanyBrief
 	if err := workflow.ExecuteActivity(ctx, a.GenerateBrief, BriefRequest{
 		Company:  in.Company,
 		Findings: findings,
+		Excerpts: excerpts,
 	}).Get(ctx, &brief); err != nil {
 		return CompanyBrief{}, err
 	}
 
 	var path string
 	if err := workflow.ExecuteActivity(ctx, a.WriteBrief, brief).Get(ctx, &path); err != nil {
+		return CompanyBrief{}, err
+	}
+
+	var indexed int
+	if err := workflow.ExecuteActivity(ctx, a.IndexBrief, brief).Get(ctx, &indexed); err != nil {
 		return CompanyBrief{}, err
 	}
 

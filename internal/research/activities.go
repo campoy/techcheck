@@ -8,17 +8,71 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/campoy/techcheck/internal/corpus"
 	"github.com/campoy/techcheck/internal/llm"
 	"github.com/campoy/techcheck/internal/search"
 )
 
 // Activities holds the dependencies the research activities need. All
-// non-determinism (LLM, search, fetch, disk) lives here, behind interfaces
-// so tests run hermetically.
+// non-determinism (LLM, search, fetch, disk, corpus) lives here, behind
+// interfaces so tests run hermetically.
 type Activities struct {
 	LLM       llm.Client
 	Searcher  search.Searcher
+	Corpus    corpus.Client
 	BriefsDir string // where approved briefs land (FR-8.2)
+}
+
+// DefaultPrecedents is how many corpus excerpts a run retrieves.
+const DefaultPrecedents = 5
+
+// CorpusSearchRequest carries the retrieval cues for precedent lookup.
+type CorpusSearchRequest struct {
+	Company  string
+	Findings []Finding
+}
+
+// CorpusSearch retrieves corpus excerpts relevant to the company using the
+// company name plus the product, market, and risk findings as cues
+// (FR-4.2), surfacing precedents from past evaluations (FR-4.3). Without a
+// corpus it returns no excerpts: an empty corpus is a normal early state.
+func (a *Activities) CorpusSearch(ctx context.Context, req CorpusSearchRequest) ([]corpus.Excerpt, error) {
+	if a.Corpus == nil {
+		return nil, nil
+	}
+
+	const maxCuesPerCategory = 5
+	var product, risks []string
+	for _, f := range req.Findings {
+		switch f.Category {
+		case CategoryProduct, CategoryMarket:
+			if len(product) < maxCuesPerCategory {
+				product = append(product, f.Claim)
+			}
+		case CategoryRisk:
+			if len(risks) < maxCuesPerCategory {
+				risks = append(risks, f.Claim)
+			}
+		}
+	}
+
+	queries := []string{req.Company}
+	if len(product) > 0 {
+		queries = append(queries, strings.Join(product, "; "))
+	}
+	if len(risks) > 0 {
+		queries = append(queries, strings.Join(risks, "; "))
+	}
+	return a.Corpus.Retrieve(ctx, queries, DefaultPrecedents)
+}
+
+// IndexBrief indexes the rendered brief into the personal corpus so future
+// evaluations retrieve it as a precedent (FR-8.3).
+func (a *Activities) IndexBrief(ctx context.Context, brief CompanyBrief) (int, error) {
+	if a.Corpus == nil {
+		return 0, nil
+	}
+	return a.Corpus.IndexDocument(ctx, "briefs/"+Normalize(brief.Company)+".md", renderBrief(brief))
 }
 
 // PlanRequest asks for a research plan for a company.
@@ -124,15 +178,27 @@ Respond with a JSON array of findings.`, raw)
 type BriefRequest struct {
 	Company  string
 	Findings []Finding
+	Excerpts []corpus.Excerpt // corpus precedents to cite (FR-6.1)
 }
 
 // GenerateBrief produces the validated CompanyBrief using the reason tier
-// (FR-6.1–FR-6.3, FR-9.4).
+// (FR-6.1–FR-6.3, FR-9.4), citing comparable precedents from the corpus
+// excerpts when they apply (FR-6.1).
 func (a *Activities) GenerateBrief(ctx context.Context, req BriefRequest) (CompanyBrief, error) {
 	raw, err := json.MarshalIndent(req.Findings, "", "  ")
 	if err != nil {
 		return CompanyBrief{}, err
 	}
+
+	excerpts := "(none)"
+	if len(req.Excerpts) > 0 {
+		rawExcerpts, err := json.MarshalIndent(req.Excerpts, "", "  ")
+		if err != nil {
+			return CompanyBrief{}, err
+		}
+		excerpts = string(rawExcerpts)
+	}
+
 	prompt := fmt.Sprintf(`Write a structured evaluation brief for the company %q based on these findings.
 
 Rules:
@@ -140,12 +206,17 @@ Rules:
 - Every claim must be supported by the findings; list every source_url you used in sources.
 - values_flags lists ethical concerns (e.g. defense contracts, surveillance).
 - questions_to_ask are for the user to ask the company directly.
-- Leave comparable_precedents empty; precedent retrieval is not available yet.
+- comparable_precedents lists parallels to past evaluations, grounded only
+  in the corpus excerpts below (e.g. "similar stage concern as TribeROI");
+  leave it empty if no excerpt is an applicable precedent.
 
 Findings:
 %s
 
-Respond with a single JSON object matching the brief structure.`, req.Company, raw)
+Corpus excerpts from past evaluations, criteria, and notes:
+%s
+
+Respond with a single JSON object matching the brief structure.`, req.Company, raw, excerpts)
 
 	var brief CompanyBrief
 	if err := a.LLM.Generate(ctx, llm.TierReason, prompt, &brief); err != nil {

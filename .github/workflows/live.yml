@@ -18,6 +18,7 @@ jobs:
     env:
       TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5

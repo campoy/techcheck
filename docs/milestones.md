@@ -41,7 +41,7 @@ assigned to no milestone.
 | [M0](#m0-design) | Requirements and design docs | — | ✅ Done ([`c3128a6`](https://github.com/campoy/techcheck/commit/c3128a6)) |
 | [M1](#m1-skeleton) | Compose stack, worker and api binaries, trivial workflow | FR-1.4 | ✅ Done ([#3](https://github.com/campoy/techcheck/pull/3)) |
 | [M2](#m2-linear-research) | Linear research pipeline, brief to disk | FR-2, FR-3, FR-6 core | ✅ Done ([#6](https://github.com/campoy/techcheck/pull/6)) |
-| [M3](#m3-corpus) | Corpus ingestion and retrieval | FR-4, FR-8.3 | ⬜ Not started |
+| [M3](#m3-corpus) | Corpus ingestion and retrieval | FR-4, FR-8.3 | ✅ Done ([#8](https://github.com/campoy/techcheck/pull/8)) |
 | [M4](#m4-loop--review) | Analysis loop, human review, accumulation | FR-5, FR-7, FR-1.3, FR-8.1 | ⬜ Not started |
 | [M5](#m5-cost--polish) | Token budgets, cost reporting, hardening | FR-9.2, FR-9.3 | ⬜ Not started |
 
@@ -118,7 +118,8 @@ Components:
 
 ## M3: Corpus
 
-**Status: ⬜ Not started**
+**Status: ✅ Done** — tests and implementation in
+[#8](https://github.com/campoy/techcheck/pull/8).
 
 **Delivers:** FR-4.1–FR-4.5, FR-8.3; completes FR-6.1 (briefs now cite
 comparable precedents).
@@ -127,10 +128,14 @@ Components:
 
 - `IngestCorpus` workflow: directory walk, header-aware Markdown splitting,
   PDF extraction, content-hash idempotent upserts.
-- pgvector schema and embedding client in the `research` database.
+- pgvector schema and embedding client (Voyage; deterministic lexical
+  embedder for hermetic runs) in the `research` database.
 - `CorpusSearch` activity with MMR-style de-duplication.
-- Briefs cite precedents from the corpus.
-- Prerequisite: the explicit criteria document is written.
+- Briefs cite precedents from the corpus; finished briefs are indexed back
+  into it (FR-8.3).
+- Prerequisite: the explicit criteria document is written — a user-side
+  step (the corpus is personal and gitignored); ingestion accepts whatever
+  the corpus directory holds.
 
 ## M4: Loop + review
 
