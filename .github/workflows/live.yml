@@ -1,0 +1,26 @@
+name: live
+
+# Weekly drift check against the real Tavily and Anthropic APIs, like
+# govulncheck: scheduled and on-demand, never blocking PRs. Catches renamed
+# response fields, auth changes, and deprecated models without making merges
+# depend on external services.
+on:
+  schedule:
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    env:
+      TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: make test-live

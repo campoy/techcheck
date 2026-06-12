@@ -21,6 +21,7 @@ import (
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 
+	"github.com/campoy/techcheck/internal/research"
 	"github.com/campoy/techcheck/internal/server"
 	"github.com/campoy/techcheck/internal/workflows"
 )
@@ -86,17 +87,25 @@ func TestWebUI(t *testing.T) {
 
 // TestEndToEnd: a run started through the API completes on a worker and its
 // event history is retrievable through the Temporal client (FR-1.4; FR-9.1
-// partial).
+// partial). As of M2 the API starts CompanyResearch (FR-1.1), so the worker
+// registers it with fake providers to stay hermetic; the M1 greeting
+// assertion is superseded by decoding a CompanyBrief.
 func TestEndToEnd(t *testing.T) {
 	c, err := client.Dial(client.Options{HostPort: temporalHostPort()})
 	require.NoError(t, err)
 	defer c.Close()
 
 	// In-process worker against the real server, same registrations the
-	// worker binary will use.
+	// worker binary uses, with hermetic providers.
 	w := worker.New(c, workflows.TaskQueue, worker.Options{})
 	w.RegisterWorkflow(workflows.Hello)
 	w.RegisterActivity(workflows.SayHello)
+	w.RegisterWorkflow(research.CompanyResearch)
+	w.RegisterActivity(&research.Activities{
+		LLM:       fakeLLM{},
+		Searcher:  fakeSearcher{},
+		BriefsDir: t.TempDir(),
+	})
 	require.NoError(t, w.Start())
 	defer w.Stop()
 
@@ -123,9 +132,10 @@ func TestEndToEnd(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	var result string
-	require.NoError(t, c.GetWorkflow(ctx, body.WorkflowID, body.RunID).Get(ctx, &result))
-	require.Equal(t, "Hello, acme!", result)
+	var brief research.CompanyBrief
+	require.NoError(t, c.GetWorkflow(ctx, body.WorkflowID, body.RunID).Get(ctx, &brief))
+	require.Equal(t, "acme", brief.Company)
+	require.NoError(t, brief.Validate())
 
 	// The run's event history must be inspectable after completion.
 	iter := c.GetWorkflowHistory(ctx, body.WorkflowID, body.RunID, false,

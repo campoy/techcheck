@@ -10,6 +10,7 @@ import (
 
 	"go.temporal.io/sdk/client"
 
+	"github.com/campoy/techcheck/internal/research"
 	"github.com/campoy/techcheck/internal/workflows"
 )
 
@@ -37,9 +38,9 @@ func New(temporal WorkflowStarter) http.Handler {
 		}
 
 		run, err := temporal.ExecuteWorkflow(r.Context(), client.StartWorkflowOptions{
-			ID:        "research-" + company,
+			ID:        "research-" + research.Normalize(company),
 			TaskQueue: workflows.TaskQueue,
-		}, workflows.Hello, company)
+		}, research.CompanyResearch, research.ResearchInput{Company: company})
 		if err != nil {
 			http.Error(w, "starting workflow: "+err.Error(), http.StatusInternalServerError)
 			return

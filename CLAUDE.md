@@ -27,10 +27,12 @@ what order.
 
 ## Process
 
-- **Test-first milestones.** Each milestone starts with a commit containing
-  the unit and integration tests that encode its behaviors — the FR IDs on
-  its "Delivers" line in `docs/milestones.md` are the checklist. That commit
-  requires explicit user review and approval before implementation begins.
+- **Test-first milestones, one PR per milestone.** Each milestone is a
+  single PR whose first commit contains the unit and integration tests that
+  encode its behaviors — the FR IDs on its "Delivers" line in
+  `docs/milestones.md` are the checklist. That commit requires explicit user
+  review and approval (as PR review, while checks are still red) before
+  implementation commits join the same PR; the PR merges once green.
   Implementation then makes those tests pass; a milestone is done only when
   all of its first-commit tests pass unmodified. If a test encoded a wrong
   expectation, fix it in its own commit with a justification — never adjust

@@ -12,6 +12,12 @@ test:
 test-integration:
 	go test -tags=integration ./...
 
+# Live tests: hit the real Tavily and Anthropic APIs. Needs TAVILY_API_KEY
+# and ANTHROPIC_API_KEY; costs money. Run manually at milestone boundaries
+# or via the weekly live workflow — never part of PR CI.
+test-live:
+	go test -tags=live ./tests/live/...
+
 # Linters: golangci-lint (style/correctness), workflowcheck (Temporal
 # workflow determinism), actionlint (GitHub Actions workflows).
 lint:
