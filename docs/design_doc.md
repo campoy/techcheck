@@ -184,11 +184,23 @@ activity result includes token usage, which the workflow aggregates (FR-9.3).
 
 ### Web search
 
-A paid search API (Tavily, Brave, or SerpAPI — final pick deferred, as in
-the original design) behind a one-method `Searcher` interface so the provider
-is swappable. Only the client code is in-repo; the service itself is the one
-deliberate non-open-source dependency alongside the LLM, per the decision to
-keep the *stack* open source while consuming hosted intelligence and search.
+**Tavily** (chosen for M2: built for LLM research agents, returns cleaned
+relevance-scored content, free tier covers this tool's volume) behind a
+one-method `Searcher` interface so the provider is swappable. Only the
+client code is in-repo; the service itself is the one deliberate
+non-open-source dependency alongside the LLM, per the decision to keep the
+*stack* open source while consuming hosted intelligence and search.
+
+### Testing strategy
+
+Hermetic by default: unit and integration tests use fake LLM and search
+implementations behind the `llm.Client` and `search.Searcher` interfaces, so
+PR CI is deterministic, free, and needs no secrets. A separate suite (build
+tag `live`, `make test-live`) hits the real Tavily and Anthropic APIs with
+deliberately loose assertions — it exists to catch API drift, not to grade
+model output — and runs on a weekly schedule plus manual dispatch, like
+govulncheck, so drift is caught without making merges depend on external
+services.
 
 ## Corpus Ingestion
 
