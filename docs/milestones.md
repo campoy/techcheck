@@ -36,7 +36,7 @@ assigned to no milestone.
 
 | Milestone | Summary | Delivers | Status |
 |---|---|---|---|
-| [M0](#m0-design) | Requirements and design docs | — | ✅ Done (`069a824`) |
+| [M0](#m0-design) | Requirements and design docs | — | ✅ Done (`c3128a6`) |
 | [M1](#m1-skeleton) | Compose stack, worker and api binaries, trivial workflow | FR-1.4 | ⬜ Not started |
 | [M2](#m2-linear-research) | Linear research pipeline, brief to disk | FR-2, FR-3, FR-6 core | ⬜ Not started |
 | [M3](#m3-corpus) | Corpus ingestion and retrieval | FR-4, FR-8.3 | ⬜ Not started |
@@ -45,9 +45,9 @@ assigned to no milestone.
 
 ## M0: Design
 
-**Status: ✅ Done** — commits `4de7ded` (license), `9238dc6` (functional
-requirements), `096a02d` (design doc), `003ae6a` (README), `f347063`
-(milestone tracker), `069a824` (FR mapping, completing commit).
+**Status: ✅ Done** — commits `c1276a6` (license), `fec66db` (functional
+requirements), `db57ae7` (design doc), `77da097` (README), `a55ae5c`
+(milestone tracker), `c3128a6` (FR mapping, completing commit).
 
 Components:
 
