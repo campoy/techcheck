@@ -36,7 +36,7 @@ assigned to no milestone.
 | Milestone | Summary | Delivers | Status |
 |---|---|---|---|
 | [M0](#m0-design) | Requirements and design docs | — | ✅ Done ([`c3128a6`](https://github.com/campoy/techcheck/commit/c3128a6)) |
-| [M1](#m1-skeleton) | Compose stack, worker and api binaries, trivial workflow | FR-1.4 | ⬜ Not started |
+| [M1](#m1-skeleton) | Compose stack, worker and api binaries, trivial workflow | FR-1.4 | ✅ Done ([#3](https://github.com/campoy/techcheck/pull/3)) |
 | [M2](#m2-linear-research) | Linear research pipeline, brief to disk | FR-2, FR-3, FR-6 core | ⬜ Not started |
 | [M3](#m3-corpus) | Corpus ingestion and retrieval | FR-4, FR-8.3 | ⬜ Not started |
 | [M4](#m4-loop--review) | Analysis loop, human review, accumulation | FR-5, FR-7, FR-1.3, FR-8.1 | ⬜ Not started |
@@ -65,7 +65,9 @@ Components:
 
 ## M1: Skeleton
 
-**Status: ⬜ Not started**
+**Status: ✅ Done** — tests in
+[#2](https://github.com/campoy/techcheck/pull/2), implementation in
+[#3](https://github.com/campoy/techcheck/pull/3).
 
 **Delivers:** FR-1.4 (the API exists and reaches Temporal); FR-9.1 partial
 (event history is captured and inspectable, though there is little to

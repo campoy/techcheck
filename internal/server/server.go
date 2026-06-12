@@ -3,9 +3,14 @@ package server
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
+	"strings"
 
 	"go.temporal.io/sdk/client"
+
+	"github.com/campoy/techcheck/internal/workflows"
 )
 
 // WorkflowStarter is the slice of the Temporal client the server needs, kept
@@ -18,5 +23,43 @@ type WorkflowStarter interface {
 // POST /companies/{name}/runs, which starts a workflow on the techcheck
 // task queue and replies 202 with the workflow and run IDs.
 func New(temporal WorkflowStarter) http.Handler {
-	return http.NewServeMux() // not implemented
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, "ok\n")
+	})
+
+	mux.HandleFunc("POST /companies/{name}/runs", func(w http.ResponseWriter, r *http.Request) {
+		company := strings.TrimSpace(r.PathValue("name"))
+		if company == "" {
+			http.Error(w, "company name required", http.StatusBadRequest)
+			return
+		}
+
+		run, err := temporal.ExecuteWorkflow(r.Context(), client.StartWorkflowOptions{
+			ID:        "research-" + company,
+			TaskQueue: workflows.TaskQueue,
+		}, workflows.Hello, company)
+		if err != nil {
+			http.Error(w, "starting workflow: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusAccepted)
+		json.NewEncoder(w).Encode(map[string]string{
+			"workflow_id": run.GetID(),
+			"run_id":      run.GetRunID(),
+		})
+	})
+
+	// ServeMux cleans paths like /companies//runs with a 307 redirect; an
+	// empty company segment is a client error, not something to launder.
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "//") {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		mux.ServeHTTP(w, r)
+	})
 }
